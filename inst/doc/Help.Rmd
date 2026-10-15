@@ -1,0 +1,178 @@
+---
+title: "RecoverMetricsR: Post-Disturbance Vegetation Recovery Analysis"
+author: "Hammadi Achour, Amal Daboussi, Wahbi Jaouadi"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{RecoverMetricsR: Post-Disturbance Vegetation Recovery}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>"
+)
+
+```
+
+# Overview
+
+**RecoverMetricsR** is an R package designed to analyze and quantify
+vegetation recovery following disturbance events (particularly forest
+fire) using remote sensing data. It provides tools to compute recovery
+metrics, model recovery trajectories, classify recovery typologies, and
+visualize uncertainty. The package is especially suited for ecosystem
+monitoring in Mediterranean landscapes.
+
+# Key Features
+
+## 1. Recovery Metrics
+
+- Computes pixel-wise spectral recovery metrics:
+  - **DM**: Disturbance Magnitude
+  - **Slope**: Trend of post-disturbance recovery
+  - **YrYr_early / YrYr_late**: Early vs. late post-disturbance annual recovery
+  - **Recovery_Rate_Change**: Difference between early and late recovery rates
+  - **RRI**: Relative Recovery Index
+  - **R80P**: Recovery to 80% of pre-disturbance state
+  - **YrYr**: Annual recovery rate
+- Metrics are computed over user-defined pre- and post-disturbance windows.
+- Optional masking of areas outside the study region.
+- Values can be clamped to theoretical ranges for robustness.
+
+## 2. Recovery Time Computation
+
+- Calculate **Time-to-Recovery (TTR)** for different thresholds.
+- Account for persistence (consecutive years above threshold) and
+  baseline pre-disturbance conditions.
+- Compute **uncertainty bands** for TTR across multiple thresholds.
+
+## 3. Parametric Recovery Modeling
+
+- Fit **exponential, logistic, or Gompertz models** to mean
+  post-disturbance spectral trajectories.
+- Extract model coefficients, standard errors, and goodness-of-fit
+  metrics (ME, RMSE, R^2^, AIC, BIC).
+- Overlay fitted curves and equations on plots for visual interpretation.
+
+## 4. Recovery Typology Classification
+
+- Classify post-disturbance recovery into four categories based on
+  TTR and uncertainty:
+  1. Fast & stable recovery
+  2. Fast but threshold-sensitive recovery
+  3. Slow & stable recovery
+  4. Slow & threshold-sensitive recovery
+- Generate **spatial maps** of recovery typologies with customizable
+  color schemes.
+
+## 5. Visualization
+
+- Plot spectral recovery trajectories with confidence bands.
+- Annotate fitted model equations on recovery plots.
+- Map spatial patterns of TTR, uncertainty, and recovery type.
+
+## 6. Summary Statistics
+
+- Compute **per-class statistics** including count, percentage, mean TTR,
+  and uncertainty metrics.
+- Add descriptive labels to recovery classes for clear interpretation.
+
+# Intended Users
+
+Ecologists, remote sensing specialists, and environmental scientists
+seeking reproducible, quantitative analyses of vegetation recovery from
+spatial data (e.g., satellite or drone imagery).
+
+# Dependencies
+
+- `terra` for raster and spatial data operations
+- `sf` (optional) for vector spatial data handling
+- `ggplot2` for plotting
+- `dplyr` and `rlang` for data manipulation
+
+# Example Workflow
+
+The following example illustrates a typical workflow on a small
+synthetic dataset. In practice, `r_stack_processed` would be a multi-layer
+`terra::SpatRaster` of yearly spectral-index values, and `Fire_scars` a
+vector polygon of the fire perimeter.
+
+```{r }
+library(RecoverMetricsR)
+library(terra)
+
+# --- Small synthetic dataset -------------------------------------
+set.seed(42)
+
+r_stack_processed <- rast(nrows = 20, ncols = 20, nlyrs = 8)
+names(r_stack_processed) <- paste0("NBR_", 1998:2005)
+years <- 1998:2005
+
+# Simulate a burn in 2000
+vals <- matrix(
+  runif(20 * 20 * 8, 0.4, 0.7),
+  ncol = 20 * 20
+)
+vals[, ] <- vals
+for (i in 1:8) {
+  values(r_stack_processed[[i]]) <- vals[i, ]
+}
+values(r_stack_processed[["NBR_2000"]]) <- values(r_stack_processed[["NBR_2000"]]) * 0.3
+
+Fire_scars <- vect(
+  "POLYGON ((2 2, 18 2, 18 18, 2 18, 2 2))",
+  crs = crs(r_stack_processed)
+)
+
+# --- 1. Compute pixel-wise recovery metrics ----------------------
+metrics_stack <- compute_recovery_metrics(
+  raster_stack = r_stack_processed,
+  years        = years,
+  event_year   = 2000,
+  pre_window   = 2,
+  post_window  = 4,
+  clamp        = TRUE,
+  metrics      = c("DM", "Slope", "YrYr_early",
+                   "YrYr_late", "Recovery_Rate_Change",
+                   "RRI", "R80P", "YrYr"),
+  mask_layer   = Fire_scars
+)
+
+print(metrics_stack)
+
+# --- 2. Compute TTR and uncertainty ------------------------------
+TTR_uncertainty <- compute_recovery_time_uncertainty(
+  raster_stack = r_stack_processed,
+  years        = years,
+  event_year   = 2000,
+  thresholds   = c(0.7, 0.8, 0.9),
+  persistence  = 1,
+  mask_layer   = Fire_scars,
+  return_band  = TRUE
+)
+
+print(TTR_uncertainty)
+
+# --- 3. Classify recovery typology -------------------------------
+Recovery_results <- classify_recovery_typology(
+  ttr_stack  = TTR_uncertainty,
+  fast_TTR   = 3,
+  unc_threshold = 2,
+  plot_map   = FALSE,
+  plot_stats = FALSE,
+  area       = TRUE
+)
+
+print(Recovery_results$Stats)
+```
+
+# Notes
+
+- The package uses a consistent year-indexing convention: `event_year`
+  must be present in `years`, and pre-/post-disturbance windows are
+  derived from it.
+- All pixel-wise operations are performed with `terra` and are
+  memory-safe for large rasters.

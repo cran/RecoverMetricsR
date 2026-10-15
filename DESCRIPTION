@@ -1,0 +1,48 @@
+Package: RecoverMetricsR
+Type: Package
+Title: Quantifying Post-Fire Spectral Recovery Metrics
+Version: 0.1.0
+Authors@R: c(
+    person(given = "Hammadi", family = "Achour",
+           email = "hammadi.achour@gmail.com",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-6364-3789")),
+    person(given = "Amal", family = "Daboussi",
+           email = "amal.daboussi001@gmail.com",
+           role = "aut"),
+    person(given = "Wahbi", family = "Jaouadi",
+           email = "jaouadiwahbi@gmail.com",
+           role = "aut")
+    )
+Description: Computes pixel-wise metrics describing post-disturbance
+    spectral recovery from a yearly spectral-index time series. Metrics
+    include disturbance magnitude (DM), an ordinary least squares (OLS)
+    recovery slope, early- and late-period recovery rates, recovery-rate
+    change, Relative Recovery Indicator (RRI), Ratio of Eighty Percent
+    (R80P), and Year-on-Year recovery (YrYr). The RRI, R80P, and YrYr
+    metrics are based on approaches described by Frazier et al. (2018)
+    <doi:10.1016/j.rse.2017.11.007>. Threshold-based recovery-time
+    approaches have been used to quantify post-fire vegetation recovery
+    from spectral time series by Chompuchan and Lin (2017)
+    <doi:10.1016/j.ecolind.2017.04.038>. Exponential recovery
+    formulations have also been applied to post-fire vegetation time
+    series by Gouveia et al. (2010) <doi:10.5194/nhess-10-673-2010>.
+    Parametric recovery models, including exponential, logistic, and
+    Gompertz formulations, are provided to characterize nonlinear
+    post-disturbance recovery trajectories.
+License: GPL-3
+Encoding: UTF-8
+Depends: R (>= 4.1.0)
+Imports: dplyr, ggplot2, grid, rlang, stats, terra (>= 1.8)
+Suggests: knitr, rmarkdown, sf, testthat (>= 3.0.0)
+VignetteBuilder: knitr
+RoxygenNote: 7.3.2
+NeedsCompilation: no
+Packaged: 2026-10-03 19:54:09 UTC; achour
+Author: Hammadi Achour [aut, cre] (ORCID:
+    <https://orcid.org/0000-0002-6364-3789>),
+  Amal Daboussi [aut],
+  Wahbi Jaouadi [aut]
+Maintainer: Hammadi Achour <hammadi.achour@gmail.com>
+Repository: CRAN
+Date/Publication: 2026-10-15 16:10:21 UTC
